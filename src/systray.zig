@@ -21,8 +21,6 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
-pub const TrayOptions = @import("systray/types.zig").TrayOptions;
-
 const Impl = switch (builtin.target.os.tag) {
     .windows => @import("systray/windows.zig"),
     .macos => @import("systray/macos.zig"),
@@ -144,14 +142,14 @@ pub const Tray = struct {
     /// Platform-specific implementation state.
     impl: Impl.Context,
 
-    /// Callbacks (opaque pointer, cast back to `*Tray` in handlers).
+    /// Callbacks — typed as `*Tray`, no casting needed in user code.
     allocator: std.mem.Allocator,
-    on_ready: ?*const fn (*anyopaque) void,
-    on_exit: ?*const fn (*anyopaque) void,
+    on_ready: ?*const fn (*Tray) void,
+    on_exit: ?*const fn (*Tray) void,
 
     /// Initialize the system tray.
     /// `self` must be stack-allocated; its address is stored for the window proc.
-    pub fn init(self: *Tray, allocator: std.mem.Allocator, options: TrayOptions) !void {
+    pub fn init(self: *Tray, allocator: std.mem.Allocator, options: anytype) !void {
         self.* = .{
             .impl = undefined,
             .allocator = allocator,
@@ -161,13 +159,13 @@ pub const Tray = struct {
         const opaque_self: *anyopaque = @ptrCast(self);
         try Impl.init(&self.impl, opaque_self, allocator);
 
-        if (self.on_ready) |cb| cb(@ptrCast(self));
+        if (self.on_ready) |cb| cb(self);
     }
 
     /// Deinitialize and free all resources.
     pub fn deinit(self: *Tray) void {
         Impl.deinit(&self.impl);
-        if (self.on_exit) |cb| cb(@ptrCast(self));
+        if (self.on_exit) |cb| cb(self);
     }
 
     /// Run the message pump (blocks until `quit()` is called).
@@ -178,7 +176,7 @@ pub const Tray = struct {
     /// Quit the system tray.
     pub fn quit(self: *Tray) void {
         Impl.quit(&self.impl);
-        if (self.on_exit) |cb| cb(@ptrCast(self));
+        if (self.on_exit) |cb| cb(self);
     }
 
     /// Set the tray icon from raw `.ico` file bytes.
@@ -215,4 +213,13 @@ pub const Tray = struct {
     pub fn resetMenu(self: *Tray) void {
         Impl.resetMenu(&self.impl);
     }
+};
+
+// ── TrayOptions ──────────────────────────────────────────────────────────
+
+/// Options passed to `Tray.init`.
+/// Callbacks receive a typed `*Tray` pointer — no casting needed.
+pub const TrayOptions = struct {
+    on_ready: ?*const fn (*Tray) void = null,
+    on_exit: ?*const fn (*Tray) void = null,
 };

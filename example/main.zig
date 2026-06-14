@@ -34,15 +34,13 @@ pub fn main() !void {
     std.debug.print("Finished quitting\n", .{});
 }
 
-fn onExit(_: *anyopaque) void {
+fn onExit(_: *Tray) void {
     std.debug.print("Exit at (time unavailable)\n", .{});
 }
 
 // ── onReady ────────────────────────────────────────────────────────────
 
-fn onReady(raw: *anyopaque) void {
-    const tray: *Tray = @ptrCast(@alignCast(raw));
-
+fn onReady(tray: *Tray) void {
     tray.setIcon(icon.data) catch {};
     tray.setTooltip("Pretty awesome棒棒嗒") catch {};
 
