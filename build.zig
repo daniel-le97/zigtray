@@ -55,6 +55,11 @@ pub fn build(b: *std.Build) void {
         mod.linkFramework("Cocoa", .{});
     }
 
+    // Linux: link dbus-1 (StatusNotifierItem / DBusMenu protocol).
+    if (target.result.os.tag == .linux) {
+        mod.linkSystemLibrary("dbus-1", .{});
+    }
+
     // ---------------------------------------------------------------
     // Example executable
     // ---------------------------------------------------------------
@@ -83,6 +88,10 @@ pub fn build(b: *std.Build) void {
     if (target.result.os.tag == .macos) {
         example_mod.addCSourceFile(.{ .file = b.path("src/systray/macos.m"), .flags = &.{"-fobjc-arc"} });
         example_mod.linkFramework("Cocoa", .{});
+    }
+
+    if (target.result.os.tag == .linux) {
+        example_mod.linkSystemLibrary("dbus-1", .{});
     }
 
     const example_exe = b.addExecutable(.{

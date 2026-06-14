@@ -26,6 +26,7 @@ pub const TrayOptions = @import("systray/types.zig").TrayOptions;
 const Impl = switch (builtin.target.os.tag) {
     .windows => @import("systray/windows.zig"),
     .macos => @import("systray/macos.zig"),
+    .linux => @import("systray/linux.zig"),
     else => @compileError("unsupported platform: " ++ @tagName(builtin.target.os.tag)),
 };
 
