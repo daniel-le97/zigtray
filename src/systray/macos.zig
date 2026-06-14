@@ -73,6 +73,11 @@ pub fn init(ctx: *Context, tray: *anyopaque, allocator: std.mem.Allocator) !void
 
 pub fn deinit(ctx: *Context) void {
     _ = ctx;
+    for (menu_items.items) |item| {
+        menu_allocator.free(item.title);
+        menu_allocator.free(item.tooltip);
+        menu_allocator.destroy(item);
+    }
     menu_items.deinit(menu_allocator);
 }
 
@@ -203,6 +208,12 @@ pub fn menuItemShow(_: *Context, item: *MenuItem) void {
 
 pub fn menuItemRemove(ctx: *Context, item: *MenuItem) void {
     c.remove_menu_item(@intCast(item.id));
+    for (menu_items.items, 0..) |mi, i| {
+        if (mi == item) {
+            _ = menu_items.swapRemove(i);
+            break;
+        }
+    }
     ctx.allocator.free(item.title);
     ctx.allocator.free(item.tooltip);
     ctx.allocator.destroy(item);

@@ -182,6 +182,11 @@ pub fn deinit(ctx: *Context) void {
         .szTip = [_]u16{0} ** 128,
     });
     if (ctx.hmenu) |h| _ = DestroyMenu(h);
+    for (ctx.menu_items.items) |item| {
+        ctx.allocator.free(item.title);
+        ctx.allocator.free(item.tooltip);
+        ctx.allocator.destroy(item);
+    }
     ctx.menu_items.deinit(ctx.allocator);
     _ = DestroyWindow(ctx.hwnd);
 }
@@ -257,7 +262,7 @@ pub fn addMenuItem(ctx: *Context, tray: anytype, title: []const u8, _: []const u
     item.* = .{
         .id = nextId(ctx),
         .title = try ctx.allocator.dupe(u8, title),
-        .tooltip = "",
+        .tooltip = try ctx.allocator.dupe(u8, ""),
         .disabled = false,
         .checked = checked,
         .is_checkable = false,
@@ -313,6 +318,12 @@ pub fn menuItemShow(_: *Context, _: *MenuItem) void {}
 
 pub fn menuItemRemove(ctx: *Context, item: *MenuItem) void {
     ctx.allocator.free(item.title);
+    for (ctx.menu_items.items, 0..) |mi, i| {
+        if (mi == item) {
+            _ = ctx.menu_items.swapRemove(i);
+            break;
+        }
+    }
     ctx.allocator.destroy(item);
 }
 

@@ -1191,6 +1191,11 @@ pub fn deinit(_: *Context) void {
         global_menu_root = null;
     }
 
+    for (global_menu_items.items) |item| {
+        global_allocator.free(item.title);
+        global_allocator.free(item.tooltip);
+        global_allocator.destroy(item);
+    }
     global_menu_items.deinit(global_allocator);
     global_menu_nodes.deinit(global_allocator);
 
@@ -1292,7 +1297,7 @@ pub fn addMenuItem(_: *Context, tray: anytype, title: []const u8, tooltip: []con
     item.* = .{
         .id = id,
         .title = try global_allocator.dupe(u8, title),
-        .tooltip = "",
+        .tooltip = try global_allocator.dupe(u8, ""),
         .disabled = false,
         .checked = checked,
         .is_checkable = is_checkable,
@@ -1358,7 +1363,7 @@ pub fn menuItemAddSubMenuItem(_: *Context, _: anytype, parent_item: *MenuItem, t
     item.* = .{
         .id = id,
         .title = try global_allocator.dupe(u8, title),
-        .tooltip = "",
+        .tooltip = try global_allocator.dupe(u8, ""),
         .disabled = false,
         .checked = checked,
         .is_checkable = is_checkable,
@@ -1501,6 +1506,9 @@ pub fn menuItemRemove(_: *Context, item: *MenuItem) void {
         }
         sendLayoutUpdated();
     }
+    global_allocator.free(item.title);
+    global_allocator.free(item.tooltip);
+    global_allocator.destroy(item);
 }
 
 pub fn menuItemSetIconFromFilePath(_: *Context, _: *MenuItem, path: []const u8) !void {

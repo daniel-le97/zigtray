@@ -25,8 +25,8 @@ const Ctx = struct {
 
 // ── Main ───────────────────────────────────────────────────────────────
 
-pub fn main() !void {
-    const allocator = std.heap.page_allocator;
+pub fn main(init: std.process.Init) !void {
+    const allocator = init.gpa;
     var tray: Tray = undefined;
     try tray.init(allocator, .{ .on_ready = onReady, .on_exit = onExit });
     defer tray.deinit();
@@ -37,6 +37,10 @@ pub fn main() !void {
 fn onExit(_: *Tray) void {
     std.debug.print("Exit at (time unavailable)\n", .{});
 }
+
+// ── File-level state (outlives onReady) ───────────────────────────────
+
+var ctx: Ctx = undefined;
 
 // ── onReady ────────────────────────────────────────────────────────────
 
@@ -62,9 +66,8 @@ fn onReady(tray: *Tray) void {
     const m_toggle = tray.addMenuItem("Toggle", "Toggle some menu items") catch return;
     const m_reset = tray.addMenuItem("Reset", "Reset all items") catch return;
 
-    // Allocate Ctx on the heap so it outlives onReady.
-    const ctx = tray.allocator.create(Ctx) catch return;
-    ctx.* = .{
+    // File-level Ctx so it outlives onReady — no heap allocation to leak.
+    ctx = .{
         .tray = tray,
         .m_quit = m_quit,
         .m_change = m_change,
@@ -75,17 +78,16 @@ fn onReady(tray: *Tray) void {
         .submenu_bottom2 = submenu_bottom2,
         .shown = true,
     };
-
     // ── Wire callbacks — no anyopaque, no @ptrCast ────────────────────
 
-    m_quit.onClick(Ctx, onQuit, ctx);
-    m_change.onClick(Ctx, onChange, ctx);
-    m_checked.onClick(Ctx, onChecked, ctx);
-    m_enabled.onClick(Ctx, onEnabled, ctx);
-    submenu_bottom2.onClick(Ctx, onPanic, ctx);
-    submenu_bottom.onClick(Ctx, onTogglePanic, ctx);
-    m_toggle.onClick(Ctx, onTogglePanic, ctx);
-    m_reset.onClick(Ctx, onReset, ctx);
+    m_quit.onClick(Ctx, onQuit, &ctx);
+    m_change.onClick(Ctx, onChange, &ctx);
+    m_checked.onClick(Ctx, onChecked, &ctx);
+    m_enabled.onClick(Ctx, onEnabled, &ctx);
+    submenu_bottom2.onClick(Ctx, onPanic, &ctx);
+    submenu_bottom.onClick(Ctx, onTogglePanic, &ctx);
+    m_toggle.onClick(Ctx, onTogglePanic, &ctx);
+    m_reset.onClick(Ctx, onReset, &ctx);
 }
 
 // ── Callbacks — typed! ─────────────────────────────────────────────────
