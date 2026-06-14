@@ -6,11 +6,11 @@ Place an icon and menu in the OS notification area (system tray).
 
 ## Platform support
 
-| Platform | Status     | Backend                                          |
-| -------- | ---------- | ------------------------------------------------ |
-| Windows  | ✅ Working | `Shell_NotifyIconW` + Win32 `HMENU`              |
-| macOS    | ✅ Working | Cocoa `NSStatusBar` + `NSMenu` (via Objective-C) |
-| Linux    | ❌ Not tested | `libayatana-appindicator3` or `GtkStatusIcon`    |
+| Platform | Status        | Backend                                              |
+| -------- | ------------- | ---------------------------------------------------- |
+| Windows  | ✅ Working    | `Shell_NotifyIconW` + Win32 `HMENU`                  |
+| macOS    | ✅ Working    | Cocoa `NSStatusBar` + `NSMenu` (via Objective-C)     |
+| Linux    | ⚠️ Not tested | `libdbus-1` (StatusNotifierItem + DBusMenu protocol) |
 
 ## API
 
@@ -30,9 +30,7 @@ pub fn main() !void {
     tray.run(); // blocking message pump
 }
 
-fn onReady(raw: *anyopaque) void {
-    const tray: *zigtray.Tray = @ptrCast(@alignCast(raw));
-
+fn onReady(tray: *zigtray.Tray) void {
     tray.setIcon(icon_bytes) catch {};
     tray.setTooltip("My App") catch {};
 
@@ -47,7 +45,7 @@ fn onReady(raw: *anyopaque) void {
 fn onQuit(_: *void) void { std.process.exit(0); }
 fn onSettings(_: *void) void { /* open settings */ }
 
-fn onExit(_: *anyopaque) void { std.debug.print("Goodbye\n", .{}); }
+fn onExit(_: *zigtray.Tray) void { std.debug.print("Goodbye\n", .{}); }
 ```
 
 ### MenuItem methods
