@@ -78,21 +78,8 @@ pub fn build(b: *std.Build) void {
         },
     });
 
-    if (target.result.os.tag == .windows) {
-        example_mod.linkSystemLibrary("shell32", .{});
-        example_mod.linkSystemLibrary("user32", .{});
-        example_mod.linkSystemLibrary("gdi32", .{});
-        example_mod.linkSystemLibrary("kernel32", .{});
-    }
-
-    if (target.result.os.tag == .macos) {
-        example_mod.addCSourceFile(.{ .file = b.path("src/systray/macos.m"), .flags = &.{"-fobjc-arc"} });
-        example_mod.linkFramework("Cocoa", .{});
-    }
-
-    if (target.result.os.tag == .linux) {
-        example_mod.linkSystemLibrary("dbus-1", .{});
-    }
+    // Platform-specific linking is inherited from the `mod` module
+    // (which `example_mod` imports), so no need to duplicate here.
 
     const example_exe = b.addExecutable(.{
         .name = "zigtray-example",

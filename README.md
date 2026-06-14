@@ -6,11 +6,11 @@ Place an icon and menu in the OS notification area (system tray).
 
 ## Platform support
 
-| Platform | Status         | Backend                                          |
-| -------- | -------------- | ------------------------------------------------ |
-| Windows  | ✅ Working     | `Shell_NotifyIconW` + Win32 `HMENU`              |
-| macOS    | ✅ Implemented | Cocoa `NSStatusBar` + `NSMenu` (via Objective-C) |
-| Linux    | ❌ Planned     | `libayatana-appindicator3` or `GtkStatusIcon`    |
+| Platform | Status     | Backend                                          |
+| -------- | ---------- | ------------------------------------------------ |
+| Windows  | ✅ Working | `Shell_NotifyIconW` + Win32 `HMENU`              |
+| macOS    | ✅ Working | Cocoa `NSStatusBar` + `NSMenu` (via Objective-C) |
+| Linux    | ❌ Not tested | `libayatana-appindicator3` or `GtkStatusIcon`    |
 
 ## API
 

@@ -148,35 +148,50 @@ pub fn resetMenu(_: *Context) void {
     menu_items.clearRetainingCapacity();
 }
 
-pub fn menuItemSetTitle(_: *Context, item: *MenuItem, title: []const u8) void {
-    const old = item.title;
-    item.title = menu_allocator.dupe(u8, title) catch return;
-    menu_allocator.free(old);
-    const title_z = std.heap.c_allocator.dupeZ(u8, title) catch return;
+/// Update the native NSMenuItem to reflect the current Zig-side state.
+fn updateNativeMenuItem(item: *MenuItem) void {
+    const title_z = std.heap.c_allocator.dupeZ(u8, item.title) catch return;
+    const tooltip_z = std.heap.c_allocator.dupeZ(u8, item.tooltip) catch return;
     c.add_or_update_menu_item(
         @intCast(item.id),
         @intCast(item.parentId()),
         @ptrCast(title_z),
-        @ptrCast(item.tooltip.ptr),
+        @ptrCast(tooltip_z),
         if (item.disabled) @as(i16, 1) else 0,
         if (item.checked) @as(i16, 1) else 0,
-        0,
+        if (item.is_checkable) @as(i16, 1) else 0,
     );
 }
 
-pub fn menuItemSetTooltip(_: *Context, _: *MenuItem, _: []const u8) void {}
+pub fn menuItemSetTitle(_: *Context, item: *MenuItem, title: []const u8) void {
+    const old = item.title;
+    item.title = menu_allocator.dupe(u8, title) catch return;
+    menu_allocator.free(old);
+    updateNativeMenuItem(item);
+}
+
+pub fn menuItemSetTooltip(_: *Context, item: *MenuItem, tooltip: []const u8) void {
+    const old = item.tooltip;
+    item.tooltip = menu_allocator.dupe(u8, tooltip) catch return;
+    menu_allocator.free(old);
+    updateNativeMenuItem(item);
+}
 
 pub fn menuItemEnable(_: *Context, item: *MenuItem) void {
     item.disabled = false;
+    updateNativeMenuItem(item);
 }
 pub fn menuItemDisable(_: *Context, item: *MenuItem) void {
     item.disabled = true;
+    updateNativeMenuItem(item);
 }
 pub fn menuItemCheck(_: *Context, item: *MenuItem) void {
     item.checked = true;
+    updateNativeMenuItem(item);
 }
 pub fn menuItemUncheck(_: *Context, item: *MenuItem) void {
     item.checked = false;
+    updateNativeMenuItem(item);
 }
 
 pub fn menuItemHide(_: *Context, item: *MenuItem) void {

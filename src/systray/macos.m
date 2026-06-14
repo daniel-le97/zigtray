@@ -88,19 +88,13 @@ static NSMenuItem* find_menu_item(NSMenu *ourMenu, NSNumber *menuId);
   self->menu = [[NSMenu alloc] init];
   self->menu.delegate = self;
   self->menu.autoenablesItems = FALSE;
+
+  // Set the menu on the status item so the system shows it on click automatically.
+  self->statusItem.menu = self->menu;
   self->statusItem.visible = TRUE;
 
+  // Detect right clicks via a custom view overlay on the button.
   NSStatusBarButton *button = self->statusItem.button;
-  button.action = @selector(leftMouseClicked);
-
-  [NSEvent addLocalMonitorForEventsMatchingMask:(NSEventTypeLeftMouseDown|NSEventTypeRightMouseDown)
-                                        handler:^NSEvent *(NSEvent *event) {
-    if (event.window != self->statusItem.button.window) return event;
-    if (event.modifierFlags & NSEventModifierFlagCommand) return event;
-    [self leftMouseClicked];
-    return nil;
-  }];
-
   NSSize size = [button frame].size;
   NSRect frame = CGRectMake(0, 0, size.width, size.height);
   RightClickDetector *rightClicker = [[RightClickDetector alloc] initWithFrame:frame];
@@ -113,7 +107,6 @@ static NSMenuItem* find_menu_item(NSMenu *ourMenu, NSNumber *menuId);
 }
 
 - (void)rightMouseClicked { systray_right_click(); }
-- (void)leftMouseClicked  { systray_left_click(); }
 
 - (void)applicationWillTerminate:(NSNotification *)aNotification {
   systray_on_exit();
@@ -207,14 +200,14 @@ static NSMenuItem* find_menu_item(NSMenu *ourMenu, NSNumber *menuId);
 - (void)reset_menu { [self->menu removeAllItems]; }
 
 - (void)show_menu {
-  self->statusItem.menu = self->menu;
-  [self->statusItem.button performClick:nil];
+  NSStatusBarButton *button = self->statusItem.button;
+  [self->menu popUpMenuPositioningItem:nil
+                            atLocation:NSMakePoint(0, button.frame.size.height + 5)
+                                inView:button];
 }
 
 - (void)menuDidClose:(NSMenu *)menu {
-  dispatch_async(dispatch_get_main_queue(), ^{
-    self->statusItem.menu = nil;
-  });
+  // No-op: menu is permanently attached to the status item.
 }
 
 - (void)quit {
@@ -254,7 +247,9 @@ static SystrayAppDelegate *owner = nil;
 void registerSystray(void) {
   owner = [[SystrayAppDelegate alloc] init];
   [[NSApplication sharedApplication] setDelegate:owner];
-  [NSApp run];
+  NSNotification *launched = [NSNotification notificationWithName:NSApplicationDidFinishLaunchingNotification
+                                                          object:[NSApplication sharedApplication]];
+  [owner applicationDidFinishLaunching:launched];
 }
 
 void nativeLoop(void) {
