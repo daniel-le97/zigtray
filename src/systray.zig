@@ -115,9 +115,20 @@ pub const MenuItem = struct {
         try Impl.menuItemSetIconFromFilePath(&t.impl, self, path);
     }
 
+    /// Register a click callback. The function receives no arguments.
+    pub fn onClick(self: *MenuItem, comptime cb: *const fn () void) void {
+        const wrapper = struct {
+            fn dispatch(_: ?*anyopaque) void {
+                cb();
+            }
+        }.dispatch;
+        self.callback = wrapper;
+        self.ctx = null;
+    }
+
     /// Register a click callback with a typed context pointer.
     /// The library wraps it internally — no `?*anyopaque` in user code.
-    pub fn onClick(self: *MenuItem, comptime T: type, comptime cb: *const fn (*T) void, ctx: *T) void {
+    pub fn onClickWith(self: *MenuItem, comptime T: type, comptime cb: *const fn (*T) void, ctx: *T) void {
         const wrapper = struct {
             fn dispatch(c: ?*anyopaque) void {
                 cb(@ptrCast(@alignCast(c.?)));
@@ -179,14 +190,12 @@ pub const Tray = struct {
         if (self.on_exit) |cb| cb(self);
     }
 
-    /// Set the tray icon from raw `.ico` file bytes.
-    pub fn setIcon(self: *Tray, icon_bytes: []const u8) !void {
-        try Impl.setIcon(&self.impl, icon_bytes);
-    }
-
-    /// Set the tray icon from a `.ico` file path.
-    pub fn setIconFromFilePath(self: *Tray, path: []const u8) !void {
-        try Impl.setIconFromFilePath(&self.impl, path);
+    /// Set the tray icon from raw bytes or a file path.
+    pub fn setIcon(self: *Tray, icon: Icon) !void {
+        switch (icon) {
+            .bytes => |bytes| try Impl.setIcon(&self.impl, bytes),
+            .file => |path| try Impl.setIconFromFilePath(&self.impl, path),
+        }
     }
 
     /// Set the tooltip text shown on hover.
@@ -213,6 +222,14 @@ pub const Tray = struct {
     pub fn resetMenu(self: *Tray) void {
         Impl.resetMenu(&self.impl);
     }
+};
+
+// ── Icon ─────────────────────────────────────────────────────────────────
+
+/// Represents a tray icon — either raw bytes or a file path.
+pub const Icon = union(enum) {
+    bytes: []const u8,
+    file: []const u8,
 };
 
 // ── TrayOptions ──────────────────────────────────────────────────────────

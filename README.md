@@ -31,19 +31,21 @@ pub fn main() !void {
 }
 
 fn onReady(tray: *zigtray.Tray) void {
-    tray.setIcon(icon_bytes) catch {};
+    tray.setIcon(.{ .bytes = icon_bytes }) catch {};
     tray.setTooltip("My App") catch {};
 
     const quit = tray.addMenuItem("Quit", "Quit the app") catch return;
     tray.addSeparator() catch {};
     const settings = tray.addMenuItem("Settings", "Open settings") catch return;
 
-    quit.onClick(void, onQuit, null);
-    settings.onClick(void, onSettings, null);
+    // Context-free callback:
+    quit.onClick(onQuit);
+    // Context-based callback:
+    settings.onClickWith(SettingsCtx, onSettings, &settings_ctx);
 }
 
-fn onQuit(_: *void) void { std.process.exit(0); }
-fn onSettings(_: *void) void { /* open settings */ }
+fn onQuit() void { std.process.exit(0); }
+fn onSettings(ctx: *SettingsCtx) void { /* open settings */ }
 
 fn onExit(_: *zigtray.Tray) void { std.debug.print("Goodbye\n", .{}); }
 ```
@@ -80,10 +82,13 @@ const AppCtx = struct {
 
 var app_ctx = AppCtx{ .window = &window, .counter = 0 };
 
-// Typed callback — no anyopaque in user code
-item.onClick(AppCtx, onItemClick, &app_ctx);
+// Context-free callback — no type boilerplate
+item.onClick(onItemClick);
+fn onItemClick() void { /* clicked */ }
 
-fn onItemClick(ctx: *AppCtx) void {
+// Context-based callback — typed context, no anyopaque
+item.onClickWith(AppCtx, onItemClickWith, &app_ctx);
+fn onItemClickWith(ctx: *AppCtx) void {
     ctx.counter += 1;
     ctx.window.setTitle("Clicked {d} times", .{ctx.counter});
 }

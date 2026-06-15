@@ -45,7 +45,7 @@ var ctx: Ctx = undefined;
 // ── onReady ────────────────────────────────────────────────────────────
 
 fn onReady(tray: *Tray) void {
-    tray.setIcon(icon.data) catch {};
+    tray.setIcon(.{ .bytes = icon.data }) catch {};
     tray.setTooltip("Pretty awesome棒棒嗒") catch {};
 
     const m_quit = tray.addMenuItem("Quit", "Quit the whole app") catch return;
@@ -80,14 +80,14 @@ fn onReady(tray: *Tray) void {
     };
     // ── Wire callbacks — no anyopaque, no @ptrCast ────────────────────
 
-    m_quit.onClick(Ctx, onQuit, &ctx);
-    m_change.onClick(Ctx, onChange, &ctx);
-    m_checked.onClick(Ctx, onChecked, &ctx);
-    m_enabled.onClick(Ctx, onEnabled, &ctx);
-    submenu_bottom2.onClick(Ctx, onPanic, &ctx);
-    submenu_bottom.onClick(Ctx, onTogglePanic, &ctx);
-    m_toggle.onClick(Ctx, onTogglePanic, &ctx);
-    m_reset.onClick(Ctx, onReset, &ctx);
+    m_quit.onClickWith(Ctx, onQuit, &ctx);
+    m_change.onClickWith(Ctx, onChange, &ctx);
+    m_checked.onClickWith(Ctx, onChecked, &ctx);
+    m_enabled.onClickWith(Ctx, onEnabled, &ctx);
+    submenu_bottom2.onClick(onPanic);
+    submenu_bottom.onClickWith(Ctx, onTogglePanic, &ctx);
+    m_toggle.onClickWith(Ctx, onTogglePanic, &ctx);
+    m_reset.onClickWith(Ctx, onReset, &ctx);
 }
 
 // ── Callbacks — typed! ─────────────────────────────────────────────────
@@ -116,7 +116,7 @@ fn onEnabled(cx: *Ctx) void {
     cx.m_enabled.disable();
 }
 
-fn onPanic(_: *Ctx) void {
+fn onPanic() void {
     std.debug.print("panic button pressed (Zig doesn't panic)\n", .{});
 }
 
@@ -137,5 +137,5 @@ fn onTogglePanic(cx: *Ctx) void {
 fn onReset(cx: *Ctx) void {
     cx.tray.resetMenu();
     const m = cx.tray.addMenuItem("Quit", "Quit the whole app") catch return;
-    m.onClick(Ctx, onQuit, cx);
+    m.onClickWith(Ctx, onQuit, cx);
 }
