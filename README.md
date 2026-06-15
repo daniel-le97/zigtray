@@ -96,7 +96,7 @@ Add to your `build.zig.zon`:
 ```zig
 .dependencies = .{
     .zigtray = .{
-        .url = "https://github.com/your-org/zigtray/archive/refs/tags/v0.1.0.tar.gz",
+        .url = "https://github.com/daniel-le97/zigtray/archive/refs/heads/main.tar.gz",
         .hash = "...",
     },
 },
